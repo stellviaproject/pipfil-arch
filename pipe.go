@@ -43,9 +43,13 @@ type pipe struct {
 
 // Create a new pipe with checkType and buffer size
 func NewPipe(name string, checkType any, buffer int) Pipe {
+	pipeType := reflect.TypeOf(checkType)
+	if pipeType.Kind() == reflect.Ptr && pipeType.Elem().Kind() == reflect.Interface {
+		pipeType = pipeType.Elem()
+	}
 	return &pipe{
 		name:      name,
-		checkType: reflect.TypeOf(checkType),     //set check type
+		checkType: pipeType,                      //set check type
 		conn:      make(map[Filter]chan any, 10), //set pipe buffer
 		len:       make(map[Filter]chan int, 10), //set length of wrapped
 		buffer:    buffer,
