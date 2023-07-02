@@ -11,12 +11,13 @@ var (
 	ErrIsNotFuncType  = errors.New("fn is not a func type")
 )
 
+// Represents a function used by filter
 type Function interface {
-	NameIn(index int, name string) Function
-	NameOut(index int, name string) Function
-	In(pipe Pipe) Function
-	Out(pipe Pipe) Function
-	Compile() error
+	NameIn(index int, name string) Function  //Set a name to a function call parameter
+	NameOut(index int, name string) Function //Set a name to a function return parameter
+	In(pipe Pipe) Function                   //Adds a sequentially associated pipe to the function call parameters.
+	Out(pipe Pipe) Function                  //Adds a sequentially associated pipe to the function return parameters.
+	Compile() error                          //Check if there are any errors in the definition
 }
 
 type function struct {

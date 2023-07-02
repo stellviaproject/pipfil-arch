@@ -6,6 +6,159 @@ import (
 	"testing"
 )
 
+// TODO: hay que arreglar lo siguiente...
+// Deteccion de deadlock:
+// 1- Puede pasar cuando:
+// hay una tuberia conectada a un filtro como entrada pero
+// que no recibe nada nunca porque no es entrada de otro filtro
+// o del modelo.
+// 2- Puede pasar cuando:
+// hay una tuberia conectada a la salida de un filtro pero
+// no esta conectada a la entrada de otro filtro o no es
+// salida del modelo.
+// 3- Puede pasar con las condiciones siguientes:
+// La salida de un filtro es un slice
+// La tuberia de salida de ese filtro no es un slice
+// La tuberia que dice la cantidad de elementos (length)
+// esta asociada a otro filtro cuya salida es un slice y
+// ella misma no es un slice.
+// 4- Puede pasar cuando una tuberia de entrada del modelo no
+// esta conectada a ningun filtro (de paso chequea la conexion
+// de las de salida).
+// 5- hay que asegurar que si dos filtros envian elementos po
+// una misma tuberia ninguno de los dos hace uso de length.
+
+func TestJoiners(t *testing.T) {
+	type DupResult struct {
+		DupLs []int
+		SeqLs []int
+	}
+	type Pow struct {
+		IncLs []*DupResult
+		Ls    []int
+		PowLs []int
+	}
+	inp := NewPipe("input", int(0), 1)
+	pow := NewPipe("pow", int(0), 1)
+	inc := NewPipe("inc", int(0), 1)
+	dup := NewPipe("dup", int(0), 1)
+	jinc := NewPipe("jinc", &DupResult{}, 1)
+	out := NewPipe("out", &Pow{}, 1)
+
+	powSequencer := NewFilterWithPipes("PowSequencer", func(input int) []int {
+		seq := make([]int, input)
+		for i := 0; i < input; i++ {
+			seq[i] = i * i
+		}
+		return seq
+	},
+		WithPipes(inp),
+		WithPipes(pow),
+		WithLens(),
+	)
+
+	// duplicater := NewFilterWithPipes("Duplicater", func(inc int) int {
+	// 	return inc * 2
+	// },
+	// 	WithPipes(pow),
+	// 	WithPipes(dup),
+	// 	WithLens(),
+	// )
+
+	// joinerPow := NewFilterWithPipes("JoinerPow", func(dups []int, pows []int) *Pow {
+	// 	return &Pow{
+	// 		Ls:    dups,
+	// 		PowLs: pows,
+	// 	}
+	// },
+	// 	WithPipes(dup, pow),
+	// 	WithPipes(out),
+	// 	WithLens(
+	// 		NewLen(dup, pow),
+	// 		NewLen(pow, pow),
+	// 	),
+	// )
+
+	// model := NewModel(
+	// 	WithFilters(
+	// 		powSequencer,
+	// 		// incSequencer,
+	// 		duplicater,
+	// 		// joinerInc,
+	// 		joinerPow,
+	// 	),
+	// 	WithPipes(inp),
+	// 	WithPipes(out),
+	// )
+	incSequencer := NewFilterWithPipes("IncSequencer", func(pow int) []int {
+		seq := make([]int, pow)
+		for i := 0; i < pow; i++ {
+			seq[i] = i
+		}
+		return seq
+	},
+		WithPipes(pow),
+		WithPipes(inc),
+		WithLens(),
+	)
+
+	duplicater := NewFilterWithPipes("Duplicater", func(inc int) int {
+		return inc * 2
+	},
+		WithPipes(inc),
+		WithPipes(dup),
+		WithLens(),
+	)
+
+	joinerInc := NewFilterWithPipes("JoinerInc", func(dups []int, seqs []int) *DupResult {
+		fmt.Println("JoinerInc: ", dups, " ", seqs)
+		return &DupResult{
+			DupLs: dups,
+			SeqLs: seqs,
+		}
+	},
+		WithPipes(dup, inc),
+		WithPipes(jinc),
+		WithLens(
+			NewLen(dup, inc),
+			NewLen(inc, inc),
+		),
+	)
+
+	joinerPow := NewFilterWithPipes("JoinerPow", func(incs []*DupResult, pows []int) *Pow {
+		fmt.Println("JoinerPow: ", len(incs), " ", pows)
+		return &Pow{
+			IncLs: incs,
+			PowLs: pows,
+		}
+	},
+		WithPipes(jinc, pow),
+		WithPipes(out),
+		WithLens(
+			NewLen(jinc, pow),
+			NewLen(pow, pow),
+		),
+	)
+
+	model := NewModel(
+		WithFilters(
+			powSequencer,
+			incSequencer,
+			duplicater,
+			joinerInc,
+			joinerPow,
+		),
+		WithPipes(inp),
+		WithPipes(out),
+	)
+	//TODO: This function is disable for debuging
+	//model.SetParallel(10)
+	model.Run()
+	result := model.Call(WithInput(10))[0].(*Pow)
+	fmt.Println(result)
+	model.Stop()
+}
+
 func TestSlice(t *testing.T) {
 	input := NewPipe("input", int(0), 1)
 	items := NewPipe("items", int(0), 10)
@@ -263,5 +416,8 @@ func TestFilter(t *testing.T) {
 		}
 	}()
 	signal.Wait()
-	fmt.Println(signal.Err())
+	all := WithFilters(duplicate, triplicate, square, tripXsquare, logxcub, substract)
+	for i := range all {
+		all[i].PrintErrs()
+	}
 }

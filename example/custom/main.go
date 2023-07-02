@@ -145,5 +145,8 @@ func main() {
 		}
 	}()
 	signal.Wait()
-	fmt.Println(signal.Err())
+	all := arch.WithFilters(duplicate, triplicate, square, tripXsquare, logxcub, substract)
+	for i := range all {
+		all[i].PrintErrs()
+	}
 }

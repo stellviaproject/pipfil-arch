@@ -11,18 +11,19 @@ var (
 	ErrPipeWithLength = errors.New("pipe with length")
 )
 
+// Represents a collection of pipes used as inputs or outputs
 type PipeCollection interface {
-	Set(pipe Pipe) error
-	SetNamed(pipe Pipe) error
-	Get(pipeType reflect.Type) (Pipe, error)
-	GetNamed(name string) (Pipe, error)
-	ForEach(action func(Pipe) bool) bool
-	GetLenFor(pipe Pipe) (Pipe, error)
-	SetLenFor(pipe, length Pipe) error
-	Has(pipeType reflect.Type) bool
-	HasNamed(name string) bool
-	IsOpen() bool
-	Close()
+	Set(pipe Pipe) error                     //Set a pipe using its type
+	SetNamed(pipe Pipe) error                //Set a pipe using its name
+	Get(pipeType reflect.Type) (Pipe, error) //Get a pipe by type
+	GetNamed(name string) (Pipe, error)      //Get a pipe by name
+	ForEach(action func(Pipe) bool) bool     //Run action for every pipe
+	GetLenFor(pipe Pipe) (Pipe, error)       //Get pipe that provides length for pipe
+	SetLenFor(pipe, length Pipe) error       //Set a pipe that provides length for pipe
+	Has(pipeType reflect.Type) bool          //It Tells if collection has a pipe for type
+	HasNamed(name string) bool               //It tells if collection has a pipe with name
+	IsOpen() bool                            //It tells if every pipe is open
+	Close()                                  //Close all pipes
 }
 
 type collection struct {

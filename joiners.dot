@@ -1,0 +1,10 @@
+digraph Joiners {
+    Input -> PowSequencer [label="int"]
+    PowSequencer -> IncSequencer [label="int"]
+    IncSequencer -> Fibonacci [label="int"]
+    Fibonacci -> JoinerInc [label="int"]
+    IncSequencer -> JoinerInc [label="int, len"]
+    JoinerInc -> JoinerPow [label="inc{fib:[]int, v:int}"]
+    PowSequencer -> JoinerPow [label="int, len"]
+    JoinerPow -> Output [label="pow{inc{fib:[]int, v:int}, p:int}"]
+}
