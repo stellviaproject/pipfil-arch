@@ -1,0 +1,21 @@
+digraph {
+    input
+    duplicate [shape=square label="duplicate(int)int"]
+    triplicate [shape=square label="triplicate(int)int"]
+    square [shape=square label="square(int)float"]
+    tripXsquare [shape=square label="tripXsquare(int,float)float"]
+    logxcube [shape=square label="logxcube(int,float)(float,float)"]
+    substract [shape=square label="substract(float,float,float)float"]
+    output
+    input -> duplicate [label="int"]
+    duplicate -> triplicate [label="int"]
+    duplicate -> square [label="int"]
+    triplicate -> tripXsquare [label="int"]
+    square -> tripXsquare [label="float"]
+    triplicate->logxcube [label="int"]
+    square->logxcube [label="float"]
+    logxcube -> substract [label="float"]
+    logxcube -> substract [label="float"]
+    tripXsquare->substract [label="float"]
+    substract->output [label="float"]
+}

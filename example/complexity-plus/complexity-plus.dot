@@ -1,0 +1,17 @@
+digraph {
+    input
+    PowSequencer [shape=square label="PowSequencer(int)[]int"]
+    IncSequencer [shape=square label="IncSequencer(int)[]int"]
+    Duplicater [shape=square label="Duplicater(int)int"]
+    JoinerInc [shape=square label="JoinerInc([]int,[]int)*DupResult"]
+    JoinerPow [shape=square label="JoinerPow([]*DupResult,[]int)*Pow"]
+    output
+    input -> PowSequencer [label="int"]
+    PowSequencer -> IncSequencer [label="int"]
+    PowSequencer -> JoinerPow [label="int,len"]
+    IncSequencer -> Duplicater [label="int"]
+    Duplicater -> JoinerInc[label="int"]
+    IncSequencer -> JoinerInc [label="int,len"]
+    JoinerInc -> JoinerPow [label="*DupResult"]
+    JoinerPow -> output [label="*Pow"]
+}

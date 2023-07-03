@@ -23,7 +23,7 @@ func main() {
 	inc := arch.NewPipe("inc", int(0), 1)
 	dup := arch.NewPipe("dup", int(0), 1)
 	jinc := arch.NewPipe("jinc", &DupResult{}, 1)
-	out := arch.NewPipe("out", &Pow{}, 1)
+	output := arch.NewPipe("output", &Pow{}, 1)
 
 	//3rd - Creating filters
 	powSequencer := arch.NewFilterWithPipes("PowSequencer", func(input int) []int {
@@ -82,7 +82,7 @@ func main() {
 		}
 	},
 		arch.WithPipes(jinc, pow),
-		arch.WithPipes(out),
+		arch.WithPipes(output),
 		arch.WithLens(
 			arch.NewLen(jinc, pow),
 			arch.NewLen(pow, pow),
@@ -98,7 +98,7 @@ func main() {
 			joinerPow,
 		),
 		arch.WithPipes(inp),
-		arch.WithPipes(out),
+		arch.WithPipes(output),
 	)
 	//4th - Running model
 	model.Run()

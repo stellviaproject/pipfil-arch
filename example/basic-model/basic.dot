@@ -1,0 +1,11 @@
+digraph {
+    input
+    inc [shape=square, label="Inc(int)[]int"]
+    dup [shape=square, label="Dup(int)int"]
+    joi [shape=square, label="Joi([]int)[]int"]
+    final
+    input -> inc [label="int"]
+    inc -> dup [label="int"]
+    dup -> joi [label="int"]
+    joi -> final [label="[]int"]
+}

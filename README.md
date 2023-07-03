@@ -116,8 +116,10 @@ About this, it has to be said that the code is present in the repository of the 
 | Clear() | Clear model errors. |
 ## Examples
 #### 1- Create pipes, filters, signal and prepare a custom architecture.
-```golang
 
+![Example of pipes and filter architecture](https://github.com/stellviaproject/pipfil-arch/tree/master/example/custom/custom.png)
+
+```golang
 package main
 
 import (
@@ -128,7 +130,7 @@ import (
 )
 
 func main() {
-    // 1st - create pipes
+	// 1st - create pipes
 	input := arch.NewPipe("input", int(0), 1)
 	duplicated := arch.NewPipe("duplicated", int(0), 1)
 	triplicated := arch.NewPipe("triplicated", int(0), 1)
@@ -136,9 +138,9 @@ func main() {
 	cubed := arch.NewPipe("cubed", float64(0), 1)
 	loged := arch.NewPipe("loged", float64(0), 1)
 	tripXsquared := arch.NewPipe("3xsqrt", float64(0), 1)
-	final := arch.NewPipe("final", float64(0), 1)
+	output := arch.NewPipe("output", float64(0), 1)
 
-    // 2nd - Create filters
+	// 2nd - Create filters
 	duplicate := arch.NewFilter("duplicate")
 	triplicate := arch.NewFilter("triplicate")
 	square := arch.NewFilter("square")
@@ -146,7 +148,7 @@ func main() {
 	logxcub := arch.NewFilter("multiple")
 	substract := arch.NewFilter("substract")
 
-    // 3rd - Set filter functions
+	// 3rd - Set filter functions
 	duplicate.UseFunc(arch.FuncOf(func(input int) int {
 		return 2 * input
 	}).In(input).Out(duplicated), //Link function input and outputs to a pipe
@@ -170,47 +172,47 @@ func main() {
 
 	substract.UseFunc(arch.FuncOf(func(cubed, loged, tripxsquare float64) float64 {
 		return cubed - loged - tripxsquare
-	}).In(cubed).In(loged).In(tripXsquared).Out(final)) //Link function inputs and outputs to a pipe
+	}).In(cubed).In(loged).In(tripXsquared).Out(output)) //Link function inputs and outputs to a pipe
 
-    //4th - Set pipes inputs and outputs in filter collection
-	duplicate.Input().SetNamed(input) //Set input pipe
+	//4th - Set pipes inputs and outputs in filter collection
+	duplicate.Input().SetNamed(input)       //Set input pipe
 	duplicate.Output().SetNamed(duplicated) //Set output pipe
 
-	triplicate.Input().SetNamed(duplicated) //Set input
+	triplicate.Input().SetNamed(duplicated)   //Set input
 	triplicate.Output().SetNamed(triplicated) //Set output pipe
 
 	square.Input().SetNamed(duplicated) //Set input pipe
-	square.Output().SetNamed(squared) //Set output pipe
+	square.Output().SetNamed(squared)   //Set output pipe
 
-	tripXsquare.Input().SetNamed(triplicated) //Set input pipe
-	tripXsquare.Input().SetNamed(squared) //Set input pipe
+	tripXsquare.Input().SetNamed(triplicated)   //Set input pipe
+	tripXsquare.Input().SetNamed(squared)       //Set input pipe
 	tripXsquare.Output().SetNamed(tripXsquared) //Set output pipe
 
 	logxcub.Input().SetNamed(triplicated) //Set input pipe
-	logxcub.Input().SetNamed(squared) //Set input pipe
-	logxcub.Output().SetNamed(cubed) //Set output pipe
-	logxcub.Output().SetNamed(loged) //Set output pipe
+	logxcub.Input().SetNamed(squared)     //Set input pipe
+	logxcub.Output().SetNamed(cubed)      //Set output pipe
+	logxcub.Output().SetNamed(loged)      //Set output pipe
 
-	substract.Input().SetNamed(cubed) //Set input pipe
-	substract.Input().SetNamed(loged) //Set input pipe
+	substract.Input().SetNamed(cubed)        //Set input pipe
+	substract.Input().SetNamed(loged)        //Set input pipe
 	substract.Input().SetNamed(tripXsquared) //Set input pipe
-	substract.Output().SetNamed(final) //Set output pipe
+	substract.Output().SetNamed(output)      //Set output pipe
 
-    //5th - Redirect pipe data to filters
-	input.To(duplicate) //input pipe to duplicate filter
-	duplicated.To(triplicate) //duplicated pipe to triplicate filter
-	duplicated.To(square) //duplicated pipe to square filter
+	//5th - Redirect pipe data to filters
+	input.To(duplicate)         //input pipe to duplicate filter
+	duplicated.To(triplicate)   //duplicated pipe to triplicate filter
+	duplicated.To(square)       //duplicated pipe to square filter
 	triplicated.To(tripXsquare) //triplicated pipe to tripXsquare filter
-	triplicated.To(logxcub) //triplicated pipe to logxcub filter
-	squared.To(tripXsquare) //squared pipe to tripXsquare filter
-	squared.To(logxcub) //squared pipe to logxcub filter
-	cubed.To(substract) //cubed pipe to substract filter
-	loged.To(substract) //loged pipe to substract filter
-	tripXsquared.To(substract) //tripXsquared pipe to substract filter
+	triplicated.To(logxcub)     //triplicated pipe to logxcub filter
+	squared.To(tripXsquare)     //squared pipe to tripXsquare filter
+	squared.To(logxcub)         //squared pipe to logxcub filter
+	cubed.To(substract)         //cubed pipe to substract filter
+	loged.To(substract)         //loged pipe to substract filter
+	tripXsquared.To(substract)  //tripXsquared pipe to substract filter
 
-	final.To(nil) //final pipe to nil (non filter, it's used to receive data in the last output)
+	output.To(nil) //final pipe to nil (non filter, it's used to receive data in the last output)
 
-    //6th - Compile every filter for finding errors
+	//6th - Compile every filter for finding errors
 	if err := duplicate.Compile(); err != nil {
 		panic(err)
 	}
@@ -230,16 +232,16 @@ func main() {
 		panic(err)
 	}
 
-    //7th - Set the same signal to every filter
-	signal := arch.NewSignal() //Create signal
-	duplicate.SetSignal(signal) //Signal to duplicate filter
-	triplicate.SetSignal(signal) //Signal to triplicate filter
-	square.SetSignal(signal) //Signal to squre filter
+	//7th - Set the same signal to every filter
+	signal := arch.NewSignal()    //Create signal
+	duplicate.SetSignal(signal)   //Signal to duplicate filter
+	triplicate.SetSignal(signal)  //Signal to triplicate filter
+	square.SetSignal(signal)      //Signal to squre filter
 	tripXsquare.SetSignal(signal) //Signal to tripXsquare filter
-	logxcub.SetSignal(signal) //Signal to logxcub filter
-	substract.SetSignal(signal) //Signal to substract filter
+	logxcub.SetSignal(signal)     //Signal to logxcub filter
+	substract.SetSignal(signal)   //Signal to substract filter
 
-    //8th - Run every filter in goruntine
+	//8th - Run every filter in goruntine
 	go duplicate.Run()
 	go triplicate.Run()
 	go square.Run()
@@ -247,10 +249,10 @@ func main() {
 	go logxcub.Run()
 	go substract.Run()
 
-    //9th - Create a gorutine to receive filter data
-    //It's posible create first send data to filter and after receive data
-    //This gorutine could not be necesary
-    //Model example below follows this paradigm.
+	//9th - Create a gorutine to receive filter data
+	//It's posible create first send data to filter and after receive data
+	//This gorutine could not be necesary
+	//Model example below follows this paradigm.
 	count := 10
 	go func() {
 		for i := 0; i < count; i++ {
@@ -260,8 +262,8 @@ func main() {
 			tripXsqrt := float64(trip) * sqrt
 			cube := math.Pow(float64(trip)*sqrt, 3)
 			log := math.Log(float64(trip) * sqrt)
-            //Receive output
-			re := final.Get(nil)
+			//Receive output
+			re := output.Get(nil)
 			te := cube - log - tripXsqrt
 			if te == re {
 				fmt.Println(te, " == ", re)
@@ -272,14 +274,14 @@ func main() {
 		signal.Stop()
 	}()
 	go func() {
-        //Send data to filter input for processing
+		//Send data to filter input for processing
 		for i := 0; i < count; i++ {
 			input.Set(i)
 		}
 	}()
-    //Wait for every filter stop
+	//Wait for every filter stop
 	signal.Wait()
-    //Print if there is an error
+	//Print if there is an error
 	all := arch.WithFilters(duplicate, triplicate, square, tripXsquare, logxcub, substract)
 	for i := range all {
 		all[i].PrintErrs()
@@ -288,66 +290,10 @@ func main() {
 
 ```
 
-#### 2- Create a simple model.
-```golang
-package main
+#### 2- Create a basic model.
 
-import (
-	"fmt"
+![Example of pipes and filter architecture](https://github.com/stellviaproject/pipfil-arch/tree/master/example/basic-model/basic.png)
 
-	arch "github.com/stellviaproject/pipfil-arch"
-)
-
-func main() {
-    //1st - Create pipes
-	input := arch.NewPipe("input", int(0), 1)
-	items := arch.NewPipe("items", int(0), 10)
-	dupls := arch.NewPipe("dupls", int(0), 10)
-	final := arch.NewPipe("final", []int{}, 10)
-
-    //2nd - Create filters
-	inc := arch.NewFilterWithPipes("inc", func(input int) []int {
-		items := []int{}
-		for i := 0; i < input; i++ {
-			items = append(items, i)
-		}
-		return items
-	},
-		arch.WithPipes(input), //Pipes inputs
-		arch.WithPipes(items), //Pipes outputs
-		arch.WithLens(), //Pipes lengths
-	)
-	dup := arch.NewFilterWithPipes("dup", func(item int) int {
-		return item * 2
-	},
-		arch.WithPipes(items), //Pipes inputs
-		arch.WithPipes(dupls), //Pipes outputs
-		arch.WithLens(), //Pipes lengths
-	)
-	joi := arch.NewFilterWithPipes("joi", func(items []int) []int {
-		return items
-	},
-		arch.WithPipes(dupls), //Pipes inputs
-		arch.WithPipes(final), //Pipes outputs
-		arch.WithLens(arch.NewLen(dupls, items)), //Pipes lengths
-	)
-
-    //3rd - Create model
-	model := arch.NewModel(arch.WithFilters(inc, dup, joi), arch.WithPipes(input), arch.WithPipes(final))
-    //4th - Run model
-	model.Run()
-    //5th - Call model
-	slice := model.Call(arch.WithInput(10))[0].([]int)
-	fmt.Println(slice) //Print result
-    //6th - Stop model
-	model.Stop()
-    //7th - Test model errors
-    if model.HasErrs() {
-		model.PrintErrs()
-	}
-}
-```
-#### 3- Creating a model with more complexity and with some error.
 ```golang
 package main
 
@@ -404,6 +350,130 @@ func main() {
 	if model.HasErrs() {
 		model.PrintErrs()
 	}
+}
+
+```
+#### 3- Creating a model with more complexity and with some error.
+
+![Example of pipes and filter architecture](https://github.com/stellviaproject/pipfil-arch/tree/master/example/complexity-plus/complexity-plus.png)
+
+```golang
+package main
+
+import (
+	"fmt"
+
+	arch "github.com/stellviaproject/pipfil-arch"
+)
+
+func main() {
+	//1st - Declaring structs for joiners results
+	type DupResult struct {
+		DupLs []int
+		SeqLs []int
+	}
+	type Pow struct {
+		IncLs []*DupResult
+		Ls    []int
+		PowLs []int
+	}
+	//2nd - Creating pipes
+	inp := arch.NewPipe("input", int(0), 1)
+	pow := arch.NewPipe("pow", int(0), 1)
+	inc := arch.NewPipe("inc", int(0), 1)
+	dup := arch.NewPipe("dup", int(0), 1)
+	jinc := arch.NewPipe("jinc", &DupResult{}, 1)
+	output := arch.NewPipe("output", &Pow{}, 1)
+
+	//3rd - Creating filters
+	powSequencer := arch.NewFilterWithPipes("PowSequencer", func(input int) []int {
+		seq := make([]int, input)
+		if input == 15 {
+			panic(fmt.Errorf("some error"))
+		}
+		for i := 0; i < input; i++ {
+			seq[i] = i * i
+		}
+		return seq
+	},
+		arch.WithPipes(inp),
+		arch.WithPipes(pow),
+		arch.WithLens(),
+	)
+
+	incSequencer := arch.NewFilterWithPipes("IncSequencer", func(pow int) []int {
+		seq := make([]int, pow)
+		for i := 0; i < pow; i++ {
+			seq[i] = i
+		}
+		return seq
+	},
+		arch.WithPipes(pow),
+		arch.WithPipes(inc),
+		arch.WithLens(),
+	)
+
+	duplicater := arch.NewFilterWithPipes("Duplicater", func(inc int) int {
+		return inc * 2
+	},
+		arch.WithPipes(inc),
+		arch.WithPipes(dup),
+		arch.WithLens(),
+	)
+
+	joinerInc := arch.NewFilterWithPipes("JoinerInc", func(dups []int, seqs []int) *DupResult {
+		return &DupResult{
+			DupLs: dups,
+			SeqLs: seqs,
+		}
+	},
+		arch.WithPipes(dup, inc),
+		arch.WithPipes(jinc),
+		arch.WithLens(
+			arch.NewLen(dup, inc),
+			arch.NewLen(inc, inc),
+		),
+	)
+
+	joinerPow := arch.NewFilterWithPipes("JoinerPow", func(incs []*DupResult, pows []int) *Pow {
+		return &Pow{
+			IncLs: incs,
+			PowLs: pows,
+		}
+	},
+		arch.WithPipes(jinc, pow),
+		arch.WithPipes(output),
+		arch.WithLens(
+			arch.NewLen(jinc, pow),
+			arch.NewLen(pow, pow),
+		),
+	)
+
+	model := arch.NewModel(
+		arch.WithFilters(
+			powSequencer,
+			incSequencer,
+			duplicater,
+			joinerInc,
+			joinerPow,
+		),
+		arch.WithPipes(inp),
+		arch.WithPipes(output),
+	)
+	//4th - Running model
+	model.Run()
+	//5th - Calling model
+	for i := 10; i < 20; i++ {
+		result := model.Call(arch.WithInput(i))[0].(*Pow)
+		fmt.Println(result)
+		//Testing model error
+		if model.HasErrs() {
+			model.PrintErrs()
+			model.Clear()
+		}
+	}
+	//6th - Stoping model
+	model.Stop()
 }
 
 ```
