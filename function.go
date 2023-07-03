@@ -84,7 +84,7 @@ func (fn *function) Compile() error {
 		if fn.ins[i] == "" {
 			inTypes[curr]++
 			if inTypes[curr] > 1 {
-				return fmt.Errorf("input parameter of type '%s' in position %d has no name and its type is allready in use.", curr.String(), i)
+				return fmt.Errorf("input parameter of type '%s' in position %d has no name and its type is allready in use", curr.String(), i)
 			}
 		}
 	}
@@ -93,7 +93,7 @@ func (fn *function) Compile() error {
 		if fn.outs[i] == "" {
 			outTypes[curr]++
 			if outTypes[curr] > 1 {
-				return fmt.Errorf("output parameter of type '%s' in position %d has no name and its type is allready in use.", curr.String(), i)
+				return fmt.Errorf("output parameter of type '%s' in position %d has no name and its type is allready in use", curr.String(), i)
 			}
 		}
 	}
