@@ -97,5 +97,8 @@ func (fn *function) Compile() error {
 			}
 		}
 	}
+	if fn.fnType.NumOut() > 0 && fn.fnType.Out(fn.fnType.NumOut()-1) == reflect.TypeOf((*error)(nil)).Elem() {
+		fn.outs = fn.outs[:len(fn.outs)-1]
+	}
 	return nil
 }
