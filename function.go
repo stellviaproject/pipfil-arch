@@ -2,6 +2,7 @@ package arch
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 )
 
@@ -76,14 +77,24 @@ func (fn *function) NameOut(index int, name string) Function {
 
 // Test repeated parameters are haveing a name
 func (fn *function) Compile() error {
-	for i := range fn.ins {
+	inTypes := map[reflect.Type]int{}
+	outTypes := map[reflect.Type]int{}
+	for i := 0; i < fn.fnType.NumIn(); i++ {
+		curr := fn.fnType.In(i)
 		if fn.ins[i] == "" {
-			return ErrInOutHasNoName
+			inTypes[curr]++
+			if inTypes[curr] > 1 {
+				return fmt.Errorf("input parameter of type '%s' in position %d has no name and its type is allready in use.", curr.String(), i)
+			}
 		}
 	}
-	for i := range fn.outs {
+	for i := 0; i < fn.fnType.NumOut(); i++ {
+		curr := fn.fnType.In(i)
 		if fn.outs[i] == "" {
-			return ErrInOutHasNoName
+			outTypes[curr]++
+			if outTypes[curr] > 1 {
+				return fmt.Errorf("output parameter of type '%s' in position %d has no name and its type is allready in use.", curr.String(), i)
+			}
 		}
 	}
 	return nil
