@@ -89,7 +89,7 @@ func (fn *function) Compile() error {
 		}
 	}
 	for i := 0; i < fn.fnType.NumOut(); i++ {
-		curr := fn.fnType.In(i)
+		curr := fn.fnType.Out(i)
 		if fn.outs[i] == "" {
 			outTypes[curr]++
 			if outTypes[curr] > 1 {
