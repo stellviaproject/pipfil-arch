@@ -117,7 +117,7 @@ About this, it has to be said that the code is present in the repository of the 
 ## Examples
 #### 1- Create pipes, filters, signal and prepare a custom architecture.
 
-![Example of pipes and filter architecture](https://github.com/stellviaproject/pipfil-arch/tree/master/example/custom/custom.png)
+![Example of pipes and filter architecture](https://github.com/stellviaproject/pipfil-arch/blob/master/example/custom/custom.png)
 
 ```golang
 package main
@@ -292,7 +292,7 @@ func main() {
 
 #### 2- Create a basic model.
 
-![Example of pipes and filter architecture](https://github.com/stellviaproject/pipfil-arch/tree/master/example/basic-model/basic.png)
+![Example of pipes and filter architecture](https://github.com/stellviaproject/pipfil-arch/blob/master/example/basic-model/basic.png)
 
 ```golang
 package main
@@ -355,7 +355,7 @@ func main() {
 ```
 #### 3- Creating a model with more complexity and with some error.
 
-![Example of pipes and filter architecture](https://github.com/stellviaproject/pipfil-arch/tree/master/example/complexity-plus/complexity-plus.png)
+![Example of pipes and filter architecture](https://github.com/stellviaproject/pipfil-arch/blob/master/example/custom/custom.png?raw=true)
 
 ```golang
 package main
