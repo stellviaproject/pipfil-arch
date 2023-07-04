@@ -141,7 +141,7 @@ func (ftr *filter) Compile() error {
 				return err
 			}
 			if outType != pipe.CheckType() && (outType.Kind() != reflect.Slice || pipe.CheckType() != outType.Elem()) {
-				return fmt.Errorf("filter '%s' has input pipe '%s' of type '%s' linked to type '%s'", ftr.name, pipe.Name(), pipe.CheckType(), outType)
+				return fmt.Errorf("filter '%s' has output pipe '%s' of type '%s' linked to type '%s'", ftr.name, pipe.Name(), pipe.CheckType(), outType)
 			}
 			ftr.outLink[pipe] = i
 		}
