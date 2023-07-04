@@ -112,7 +112,7 @@ func (ftr *filter) Compile() error {
 			}
 
 			if pipe.CheckType() != inType && (inType.Kind() != reflect.Slice || pipe.CheckType() != inType.Elem()) {
-				return ErrPipeTypeMismatch
+				return fmt.Errorf("filter '%s' has input pipe '%s' of type '%s' linked to type '%s'", ftr.name, pipe.Name(), pipe.CheckType(), inType)
 			}
 			if inType.Kind() == reflect.Slice && pipe.CheckType() == inType.Elem() {
 				length, err := ftr.input.GetLenFor(pipe)
@@ -141,7 +141,7 @@ func (ftr *filter) Compile() error {
 				return err
 			}
 			if outType != pipe.CheckType() && (outType.Kind() != reflect.Slice || pipe.CheckType() != outType.Elem()) {
-				return ErrPipeTypeMismatch
+				return fmt.Errorf("filter '%s' has input pipe '%s' of type '%s' linked to type '%s'", ftr.name, pipe.Name(), pipe.CheckType(), outType)
 			}
 			ftr.outLink[pipe] = i
 		}
