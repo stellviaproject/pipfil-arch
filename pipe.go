@@ -2,12 +2,13 @@ package arch
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"sync"
 )
 
 // It's produced when data send to pipe doesn't match with pipe data type in its definition
-var ErrPipeTypeMismatch = errors.New("pipe input data type mismatch")
+//var ErrPipeTypeMismatch = errors.New("pipe input data type mismatch")
 
 // It's produced when a filter try to get data from pipe and it's not linked to pipe, use method To(filter Filter)
 var ErrUnRegisteredFilter = errors.New("unregistered filter")
@@ -86,7 +87,7 @@ func (pipe *pipe) Set(data any) {
 	inType := reflect.TypeOf(data)
 	//Check input data type
 	if inType != pipe.checkType {
-		panic(ErrPipeTypeMismatch)
+		panic(fmt.Errorf("pipe '%s' receive type '%s' but is defined as '%s'", pipe.name, inType, pipe.checkType))
 	}
 	//Make sure every channel is receiving data without lost it
 	wg := sync.WaitGroup{}
