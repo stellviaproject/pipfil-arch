@@ -86,7 +86,7 @@ func (pipe *pipe) Set(data any) {
 	//Get input data data type
 	inType := reflect.TypeOf(data)
 	//Check input data type
-	if inType != pipe.checkType {
+	if inType.AssignableTo(pipe.checkType) {
 		panic(fmt.Errorf("pipe '%s' receive type '%s' but is defined as '%s'", pipe.name, inType, pipe.checkType))
 	}
 	//Make sure every channel is receiving data without lost it
