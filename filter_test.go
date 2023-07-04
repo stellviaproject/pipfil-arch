@@ -6,7 +6,6 @@ import (
 	"testing"
 )
 
-// TODO: hay que arreglar lo siguiente...
 // Deteccion de deadlock:
 // 1- Puede pasar cuando:
 // hay una tuberia conectada a un filtro como entrada pero
@@ -151,8 +150,7 @@ func TestJoiners(t *testing.T) {
 		WithPipes(inp),
 		WithPipes(out),
 	)
-	//TODO: This function is disable for debuging
-	//model.SetParallel(10)
+	model.SetParallel(10)
 	model.Run()
 	result := model.Call(WithInput(10))[0].(*Pow)
 	fmt.Println(result)

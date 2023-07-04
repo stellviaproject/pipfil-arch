@@ -92,17 +92,14 @@ func WithInput(input ...any) []any {
 
 // Represents a model with pipes-filters architecture
 type Model interface {
-	Call(input []any) []any //Call model to evaluate in algorithm with pipes-filters architecture
-	Run()                   //Run model
-	Stop()                  //Stop model
-
-	//TODO: This function is disable for debuging
-	//SetParallel(parallel int) error //Set parallel value to every filter
-
-	Errs() []error //Get model error
-	HasErrs() bool //Tell if model has errors
-	PrintErrs()    //Print errors
-	Clear()        //Clear model errors
+	Call(input []any) []any         //Call model to evaluate in algorithm with pipes-filters architecture
+	Run()                           //Run model
+	Stop()                          //Stop model
+	SetParallel(parallel int) error //Set parallel value to every filter
+	Errs() []error                  //Get model error
+	HasErrs() bool                  //Tell if model has errors
+	PrintErrs()                     //Print errors
+	Clear()                         //Clear model errors
 }
 
 type model struct {
@@ -206,6 +203,13 @@ func NewModel(filters []Filter, inputs, outpus []Pipe) Model {
 			if !isFilterInput && !isModelOutput {
 				panic(fmt.Errorf("filter '%s' has output pipe '%s' not connected to model output or to other filter input", ftr.Name(), out.Name()))
 			}
+			if isModelOutput {
+				link := ftr.outLink[out]
+				outType := ftr.outs[link]
+				if outType != out.CheckType() {
+					panic(fmt.Errorf("filter '%s' has output pipe '%s' as model output but it trys to send one by one", ftr.name, out.Name()))
+				}
+			}
 			return true
 		})
 	}
@@ -247,16 +251,15 @@ func (md *model) HasErrs() bool {
 	return false
 }
 
-//TODO: This function is disable for debuging
 // Set parallel value to every filter
-// func (md *model) SetParallel(parallel int) error {
-// 	for i := range md.filters {
-// 		if err := md.filters[i].SetParallel(parallel); err != nil {
-// 			return err
-// 		}
-// 	}
-// 	return nil
-// }
+func (md *model) SetParallel(parallel int) error {
+	for i := range md.filters {
+		if err := md.filters[i].SetParallel(parallel); err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
 // Call model with architecture of pipes and filters using an input
 //

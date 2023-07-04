@@ -20,19 +20,18 @@ var ErrParallelZeroNeg = errors.New("parallel is lesser than or equal to zero")
 
 // Represents a filter for pipes-filter architecture
 type Filter interface {
-	Name() string            //Filter name
-	Input() PipeCollection   //Input collection of pipes linked to filter
-	Output() PipeCollection  //Output collection of pipes linked to filter
-	UseFunc(fn Function)     //Function that filter runs for processing pipes incoming data
-	Compile() error          //Compile filter and test if it has errors in its definition
-	SetSignal(signal Signal) //Set signal to control filter gorutines
-	//TODO: This function is disable for debuging
-	//SetParallel(parallel int) error //Control number of filter gorutines for processing multiple inputs at the same time
-	Run()          //Run filter, it's must be run in a gorutine
-	Clear()        //Clear errors
-	Errs() []error //Return internal error list
-	HasErrs() bool //Tell if there are errors
-	PrintErrs()    //Print errors
+	Name() string                   //Filter name
+	Input() PipeCollection          //Input collection of pipes linked to filter
+	Output() PipeCollection         //Output collection of pipes linked to filter
+	UseFunc(fn Function)            //Function that filter runs for processing pipes incoming data
+	Compile() error                 //Compile filter and test if it has errors in its definition
+	SetSignal(signal Signal)        //Set signal to control filter gorutines
+	SetParallel(parallel int) error //Control number of filter gorutines for processing multiple inputs at the same time
+	Run()                           //Run filter, it's must be run in a gorutine
+	Clear()                         //Clear errors
+	Errs() []error                  //Return internal error list
+	HasErrs() bool                  //Tell if there are errors
+	PrintErrs()                     //Print errors
 }
 
 type filter struct {
@@ -47,6 +46,8 @@ type filter struct {
 	errs     []error
 	parallel int
 	sg       *signal
+	lck      chan int
+	q        *queue
 	compiled bool
 }
 
@@ -59,6 +60,7 @@ func NewFilter(name string) Filter {
 		outLink:  make(map[Pipe]int),
 		length:   make(map[Pipe]Pipe),
 		errs:     make([]error, 0, 10),
+		lck:      make(chan int, 1),
 		parallel: 1,
 	}
 }
@@ -179,7 +181,11 @@ func (ftr *filter) Run() {
 	if !ftr.compiled {
 		panic(ErrFilterNotCompiled)
 	}
-	//q := NewQueue(ftr.parallel)
+	ftr.q = NewQueue(ftr.parallel)
+	ftr.q.run(func(v any) {
+		msg := v.(*msg)
+		ftr.send(msg.output, msg.err, msg.unset)
+	})
 	ftr.errs = make([]error, 0, 10)
 	sg := ftr.sg
 	for ftr.input.IsOpen() && ftr.output.IsOpen() {
@@ -221,47 +227,74 @@ func (ftr *filter) Run() {
 			break
 		}
 		if ftr.parallel > 1 {
-			panic("not implemented")
+			ch := ftr.q.push(input)
+			go ftr.process(input, ch, unset)
 		} else {
-			var output []reflect.Value
-			var err error
-			if !unset {
-				output, err = ftr.call(input)
-				if err != nil {
-					ftr.errs = append(ftr.errs, err)
-				}
-			}
-			ftr.output.ForEach(func(pipe Pipe) bool {
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
-					index := ftr.outLink[pipe]
-					otype := ftr.outs[index]
-					if otype.Kind() == reflect.Slice && pipe.CheckType() == otype.Elem() {
-						if err != nil || unset {
-							pipe.SetLen(0)
-						} else {
-							out := output[index]
-							pipe.SetLen(out.Len())
-							for i := 0; i < out.Len(); i++ {
-								pipe.Set(out.Index(i).Interface())
-							}
-						}
-					} else {
-						if err != nil || unset {
-							pipe.Set(nil)
-						} else {
-							pipe.Set(output[index].Interface())
-						}
-					}
-				}()
-				return true
-			})
-			wg.Wait()
+			ftr.send(ftr.process(input, nil, unset))
 		}
 	}
 	ftr.output.Close()
 	ftr.input.Close()
+	ftr.q.exit()
+}
+
+type msg struct {
+	output []reflect.Value
+	err    error
+	unset  bool
+}
+
+func (ftr *filter) process(input []reflect.Value, send chan any, unset bool) ([]reflect.Value, error, bool) {
+	var output []reflect.Value
+	var err error
+	if !unset {
+		output, err = ftr.call(input)
+		if err != nil {
+			ftr.lck <- 0
+			ftr.errs = append(ftr.errs, err)
+			<-ftr.lck
+		}
+	}
+	if send != nil {
+		send <- &msg{
+			output: output,
+			err:    err,
+			unset:  unset,
+		}
+		ftr.q.set()
+	}
+	return output, err, unset
+}
+
+func (ftr *filter) send(output []reflect.Value, err error, unset bool) {
+	wg := sync.WaitGroup{}
+	ftr.output.ForEach(func(pipe Pipe) bool {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			index := ftr.outLink[pipe]
+			otype := ftr.outs[index]
+			if otype.Kind() == reflect.Slice && pipe.CheckType() == otype.Elem() {
+				if err != nil || unset {
+					pipe.SetLen(0)
+				} else {
+					out := output[index]
+					pipe.SetLen(out.Len())
+					for i := 0; i < out.Len(); i++ {
+						pipe.Set(out.Index(i).Interface())
+					}
+				}
+			} else {
+				if err != nil || unset {
+					pipe.Set(nil)
+				} else {
+					pipe.Set(output[index].Interface())
+				}
+			}
+		}()
+		return true
+	})
+	wg.Wait()
 }
 
 func (ftr *filter) SetSignal(sg Signal) {
