@@ -3,7 +3,10 @@ package arch
 import (
 	"fmt"
 	"math"
+	"math/rand"
+	"sync"
 	"testing"
+	"time"
 )
 
 // Deteccion de deadlock:
@@ -26,6 +29,54 @@ import (
 // de las de salida).
 // 5- hay que asegurar que si dos filtros envian elementos po
 // una misma tuberia ninguno de los dos hace uso de length.
+
+func TestParallel(t *testing.T) {
+	in := NewPipe("in", int(0), 5)
+	out := NewPipe("out", int(0), 5)
+	ftr := NewFilterWithPipes(
+		"for",
+		func(c int) int {
+			s := 0
+			for i := 0; i < c; i++ {
+				s += i
+				time.Sleep(time.Millisecond * time.Duration(rand.Intn(30)))
+			}
+			return s
+		},
+		WithPipes(in),
+		WithPipes(out),
+		WithLens(),
+	)
+	model := NewModel(WithFilters(ftr), WithPipes(in), WithPipes(out))
+	model.Run()
+	const LN = 40
+	sums := make([]int, LN)
+	wg := sync.WaitGroup{}
+	p := make(chan int, 10)
+	for i := 0; i < LN; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			p <- 0
+			sums[i] = model.Call(WithInput(i))[0].(int)
+			<-p
+		}(i)
+	}
+	wg.Wait()
+	test := make([]int, LN)
+	for i := 0; i < LN; i++ {
+		sum := 0
+		for j := 0; j < i; j++ {
+			sum += j
+		}
+		test[i] = sum
+	}
+	for i := 0; i < LN; i++ {
+		if sums[i] != test[i] {
+			t.FailNow()
+		}
+	}
+}
 
 func TestJoiners(t *testing.T) {
 	type DupResult struct {

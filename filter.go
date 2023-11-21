@@ -181,7 +181,7 @@ func (ftr *filter) Run() {
 	if !ftr.compiled {
 		panic(ErrFilterNotCompiled)
 	}
-	ftr.q = NewQueue(ftr.parallel)
+	ftr.q = newQueue(ftr.parallel)
 	ftr.q.run(func(v any) {
 		msg := v.(*msg)
 		ftr.send(msg.output, msg.err, msg.unset)
@@ -207,7 +207,9 @@ func (ftr *filter) Run() {
 					slice := reflect.MakeSlice(reflect.SliceOf(pipe.CheckType()), sliceLen, sliceLen)
 					for i := 0; i < sliceLen; i++ {
 						//fmt.Println(ftr.name, " [", i, "] <- ", pipe.Name())
-						slice.Index(i).Set(reflect.ValueOf(pipe.Get(ftr)))
+						if v := pipe.Get(ftr); v != nil {
+							slice.Index(i).Set(reflect.ValueOf(v))
+						}
 					}
 					input[index] = slice
 				} else {

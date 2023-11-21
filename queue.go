@@ -7,7 +7,7 @@ type queue struct {
 	lock, prll, sgn chan int
 }
 
-func NewQueue(parallel int) *queue {
+func newQueue(parallel int) *queue {
 	return &queue{
 		parallel: parallel,
 		inputs:   make([]any, 0, parallel),

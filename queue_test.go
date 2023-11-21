@@ -10,7 +10,7 @@ import (
 )
 
 func TestQueue(t *testing.T) {
-	q := NewQueue(20)
+	q := newQueue(20)
 	wg := sync.WaitGroup{}
 	type Pair struct {
 		ID   int

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"sync"
 )
 
 // This error is produced with panic when you call model with not enough or more than required length of arguments.
@@ -106,6 +107,9 @@ type model struct {
 	singal         Signal
 	filters        []Filter
 	inputs, outpus []Pipe
+	inMap, outMap  map[string]int
+	calls          []chan []any
+	mtxIn, mtxOut  sync.Mutex
 }
 
 // Create a new model with pipes-filters architecture
@@ -119,22 +123,32 @@ func NewModel(filters []Filter, inputs, outpus []Pipe) Model {
 	}
 	// deadlock detect
 	// generate input map
+	inIndex := make(map[string]int, len(inputs))
 	inputMap := map[Pipe]int{}
 	for i := range inputs {
 		pipe := inputs[i]
 		if _, ok := inputMap[pipe]; ok {
 			panic(ErrModelInOutRepeated)
 		}
-		inputMap[pipe] = 0
+		if _, ok := inIndex[pipe.Name()]; ok {
+			panic(ErrModelInOutRepeated)
+		}
+		inputMap[pipe] = i
+		inIndex[pipe.Name()] = i
 	}
 	// generate output map
+	outIndex := make(map[string]int, len(outpus))
 	outputMap := map[Pipe]int{}
 	for i := range outpus {
 		pipe := outpus[i]
 		if _, ok := outputMap[pipe]; ok {
 			panic(ErrModelInOutRepeated)
 		}
-		outputMap[pipe] = 0
+		if _, ok := outIndex[pipe.Name()]; ok {
+			panic(ErrModelInOutRepeated)
+		}
+		outputMap[pipe] = i
+		outIndex[pipe.Name()] = i
 	}
 	for i := range filters {
 		ftr := filters[i].(*filter)
@@ -231,6 +245,9 @@ func NewModel(filters []Filter, inputs, outpus []Pipe) Model {
 		filters: filters,
 		inputs:  inputs,
 		outpus:  outpus,
+		inMap:   inIndex,
+		outMap:  outIndex,
+		calls:   make([]chan []any, 0, 10),
 	}
 }
 
@@ -270,14 +287,88 @@ func (md *model) Call(input []any) []any {
 	if len(input) != len(md.inputs) {
 		panic(ErrInputCountMismatch)
 	}
+
+	md.mtxIn.Lock()
+	//Critical section
+	ch := make(chan []any, 1)
+	md.calls = append(md.calls, ch)
+
 	for i := 0; i < len(input); i++ {
 		md.inputs[i].Set(input[i])
 	}
-	output := make([]any, len(md.outpus))
-	for i := 0; i < len(output); i++ {
-		output[i] = md.outpus[i].Get(nil)
-	}
+
+	md.mtxIn.Unlock()
+	wt := make(chan int, 1)
+	go func() {
+		//Critical section for outputs
+		//Every gorutine is trying to get output at the same time
+		md.mtxOut.Lock()
+		output := make([]any, len(md.outpus))
+		for i := 0; i < len(output); i++ {
+			output[i] = md.outpus[i].Get(nil)
+		}
+
+		md.mtxIn.Lock()
+		md.calls[0] <- output
+		md.calls = md.calls[1:]
+		md.mtxIn.Unlock()
+
+		md.mtxOut.Unlock()
+		wt <- 0
+	}()
+	output := <-ch
+	<-wt
 	return output
+}
+
+func (md *model) GetIn(in any) []any {
+	inValue := reflect.ValueOf(in)
+	inType := inValue.Type()
+	ins := make([]any, len(md.inputs))
+	for i := 0; i < inType.NumField(); i++ {
+		field := inType.Field(i)
+		if pipeName, ok := field.Tag.Lookup("pipe"); ok {
+			if index, ok := md.inMap[pipeName]; ok {
+				ins[index] = inValue.Field(i)
+			} else {
+				panic(fmt.Errorf("pipe '%s' not found", pipeName))
+			}
+		} else if index, ok := md.inMap[field.Name]; ok {
+			ins[index] = inValue.Field(i)
+		}
+	}
+	for i := 0; i < len(ins); i++ {
+		if ins[i] == nil {
+			panic(fmt.Errorf("pipe '%s' required value not found", md.inputs[i].Name()))
+		}
+	}
+	return ins
+}
+
+func (md *model) SetOut(out any, outputs []any) {
+	outValue := reflect.ValueOf(out)
+	outType := outValue.Type()
+	if outType.Kind() != reflect.Ptr {
+		panic(fmt.Errorf("ptr to struct is required"))
+	}
+	outType = outType.Elem()
+	outValue = outValue.Elem()
+	for i := 0; i < outType.NumField(); i++ {
+		field := outType.Field(i)
+		var value any
+		if pipeName, ok := field.Tag.Lookup("pipe"); ok {
+			if index, ok := md.outMap[pipeName]; ok {
+				value = outputs[index]
+			} else {
+				panic(fmt.Errorf("pipe '%s' not found", pipeName))
+			}
+		} else if index, ok := md.outMap[field.Name]; ok {
+			value = outputs[index]
+		}
+		if value != nil {
+			outValue.Field(i).Set(reflect.ValueOf(value))
+		}
+	}
 }
 
 // Run model
